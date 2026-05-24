@@ -1,0 +1,42 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sleek black background -->
+  <circle cx="256" cy="256" r="256" fill="#000000"/>
+  
+  <!-- Outer luxury rings -->
+  <circle cx="256" cy="256" r="220" stroke="url(#gold_grad)" stroke-width="6" opacity="0.4"/>
+  <circle cx="256" cy="256" r="200" stroke="url(#gold_grad)" stroke-width="2" opacity="0.6"/>
+
+  <!-- Background "V" for Vibhav -->
+  <text x="256" y="320" font-family="Georgia, serif" font-size="160" font-weight="bold" fill="rgba(253, 230, 138, 0.15)" text-anchor="middle">V</text>
+
+  <!-- Elegant Symmetrical Line-Art Crown -->
+  <path d="M120 340 
+           Q100 240 120 180 
+           Q154 200 188 260 
+           Q222 190 256 120 
+           Q290 190 324 260 
+           Q358 200 392 180 
+           Q412 240 392 340 Z" 
+        stroke="url(#gold_grad)" stroke-width="16" stroke-linejoin="round" fill="rgba(253, 230, 138, 0.2)"/>
+  
+  <!-- Crown Base Lines -->
+  <path d="M130 380 L382 380" stroke="url(#gold_grad)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M160 410 L352 410" stroke="url(#gold_grad)" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Floating Royal Jewels -->
+  <circle cx="120" cy="150" r="14" fill="#FEF08A"/>
+  <circle cx="256" cy="90" r="20" fill="#FEF08A"/>
+  <circle cx="392" cy="150" r="14" fill="#FEF08A"/>
+  
+  <!-- Inner Diamond/Stars -->
+  <path d="M256 200 L264 220 L284 228 L264 236 L256 256 L248 236 L228 228 L248 220 Z" fill="#FEF08A"/>
+
+  <defs>
+    <linearGradient id="gold_grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDE68A"/>
+      <stop offset="0.3" stop-color="#F59E0B"/>
+      <stop offset="0.7" stop-color="#D97706"/>
+      <stop offset="1" stop-color="#FEF08A"/>
+    </linearGradient>
+  </defs>
+</svg>

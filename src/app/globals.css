@@ -1,26 +1,115 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-serif: var(--font-playfair), serif;
+  --font-sans: var(--font-inter), sans-serif;
+  --font-cinzel: var(--font-cinzel), serif;
+  --font-cormorant: var(--font-cormorant), serif;
+  --color-pastel-pink: #fce4ec;
+  --color-pastel-blue: #e3f2fd;
+  --color-pastel-green: #e8f5e9;
+  --color-pastel-yellow: #fff9c4;
+  --shadow-soft: 0 20px 60px rgba(15, 23, 42, 0.12);
+  --shadow-dreamy: 0 35px 90px rgba(15, 23, 42, 0.18);
+  --shadow-inner-soft: inset 0 -80px 90px rgba(15, 23, 42, 0.22);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 selection:bg-pink-100;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+  
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    letter-spacing: 0;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.ken-burns {
+  animation: kenburns 20s ease infinite alternate;
+}
+
+@keyframes kenburns {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.1) translate(-1%, -1%);
+  }
+}
+
+.glass-panel {
+  @apply bg-white/30 backdrop-blur-md border border-white/20 shadow-xl;
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+@layer utilities {
+  .text-shimmer {
+    background: linear-gradient(
+      to right,
+      #ffffff 0%,
+      #ffffff 40%,
+      #ffd700 50%,
+      #ffffff 60%,
+      #ffffff 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3s linear infinite;
+    display: inline-block;
+  }
+
+  .float-slow {
+    animation: float 6s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes scroll-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-scroll-line {
+  animation: scroll-line 2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
