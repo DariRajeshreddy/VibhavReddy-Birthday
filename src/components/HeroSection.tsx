@@ -93,8 +93,10 @@ export default function HeroSection() {
       }
     };
     
+    // Expose directly to window to preserve user gesture token during onClick
+    (window as any).playHeroMusic = handleGlobalInteraction;
+
     window.addEventListener("click", handleGlobalInteraction, { once: true });
-    window.addEventListener("heroPlayMusic", handleGlobalInteraction, { once: true });
     window.addEventListener("wheel", handleGlobalInteraction, { once: true, passive: true });
     window.addEventListener("touchstart", handleGlobalInteraction, { once: true, passive: true });
     window.addEventListener("keydown", handleGlobalInteraction, { once: true });
@@ -110,18 +112,17 @@ export default function HeroSection() {
     const initYoutubePlayer = () => {
       if (!ytContainerRef.current || ytPlayerRef.current) return;
       ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
-        height: '10', width: '10', videoId: ytId,
+        height: '200', width: '200', videoId: ytId,
         playerVars: { autoplay: 1, controls: 0, loop: 1, playlist: ytId, mute: 1, playsinline: 1 },
         events: {
           onReady: (event: any) => {
             ytReadyRef.current = true;
             event.target.setLoop(true);
-            // Don't dispatch heroYtReady here. We wait for it to actually start playing silently.
+            (window as any).heroYtReady = true;
           },
           onStateChange: (event: any) => {
-            // State 1 = Playing. If it starts playing silently in the background, it's fully buffered!
-            if (event.data === 1 && !hasInteractedRef.current) {
-              window.dispatchEvent(new CustomEvent('heroYtReady'));
+            if (event.data === 1) {
+              window.dispatchEvent(new CustomEvent('heroYtPlaying'));
             }
             if (event.data === 0) event.target.playVideo();
           }
@@ -170,7 +171,7 @@ export default function HeroSection() {
           start: "top top",
           end: "+=1500",
           pin: true,
-          scrub: 1,
+          scrub: true, // Use instant scrub to remove delay/lag
           onLeave: pauseYtWithFade,
           onEnterBack: playYtWithFade,
         }
@@ -191,49 +192,8 @@ export default function HeroSection() {
         .fromTo(".continue-btn", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1 }, "-=1")
         .fromTo(".scroll-indicator", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1 }, "-=0.5")
 
-        // Balloons reveal
-        .fromTo(".balloon", { opacity: 0, y: 300 }, { opacity: 1, y: -200, duration: 6, stagger: 0.5 }, "-=3")
-
         // Final fade out of the whole section
         .to(".hero-content", { opacity: 0, y: -100, duration: 3, ease: "power2.in" }, "+=2");
-
-      // 3. Auto-play if the user doesn't scroll
-      const autoPlayTween = gsap.to(window, {
-        scrollTo: { y: 1500, autoKill: true },
-        duration: 8,
-        delay: 2,
-        ease: "power1.inOut",
-        paused: true,
-        onComplete: () => {
-          gsap.to(window, {
-            scrollTo: window.innerHeight + 100,
-            duration: 1.5,
-            ease: "power2.out"
-          });
-        }
-      });
-
-      // Start auto-play after a delay
-      const timer = setTimeout(() => {
-        if (window.scrollY < 100) {
-          autoPlayTween.play();
-        }
-      }, 1000);
-
-      // Cancel auto-play on user interaction
-      const cancelAutoPlay = () => {
-        if (autoPlayTween.isActive()) {
-          autoPlayTween.kill();
-        }
-        clearTimeout(timer);
-        playYtWithFade(); // Unmute/play on user interaction
-      };
-
-      // Listen for any interaction to hand over control to the user
-      window.addEventListener("wheel", cancelAutoPlay, { once: true, passive: true });
-      window.addEventListener("touchmove", cancelAutoPlay, { once: true, passive: true });
-      window.addEventListener("mousedown", cancelAutoPlay, { once: true });
-      window.addEventListener("keydown", cancelAutoPlay, { once: true });
 
     }, containerRef);
 
@@ -253,7 +213,7 @@ export default function HeroSection() {
 
   return (
     <section ref={containerRef} className="relative h-screen w-full overflow-hidden bg-slate-950 flex flex-col items-center justify-center text-white">
-      <div className="absolute -z-50 opacity-0 pointer-events-none">
+      <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none w-[200px] h-[200px] overflow-hidden">
         <div ref={ytContainerRef} />
       </div>
       {/* Scroll Hint Note */}

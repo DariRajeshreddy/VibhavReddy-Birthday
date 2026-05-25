@@ -6,17 +6,31 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function WelcomeOverlay() {
   const [isOpen, setIsOpen] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
 
   useEffect(() => {
-    const handleReady = () => setIsReady(true);
-    window.addEventListener('heroYtReady', handleReady);
-    
-    // Fallback: If YT takes more than 4s to load, allow the user to enter anyway
-    const timer = setTimeout(() => setIsReady(true), 4000);
+    // Poll for YT ready state set by HeroSection
+    const checkInterval = setInterval(() => {
+      if ((window as any).heroYtReady) {
+        setIsReady(true);
+        clearInterval(checkInterval);
+      }
+    }, 500);
+
+    // Also listen for the playing event to finally close the overlay
+    const handlePlaying = () => setIsOpen(true);
+    window.addEventListener('heroYtPlaying', handlePlaying);
+
+    // Fallback if YT never fires ready
+    const timer = setTimeout(() => {
+      setIsReady(true);
+      clearInterval(checkInterval);
+    }, 4000);
 
     return () => {
-      window.removeEventListener('heroYtReady', handleReady);
+      clearInterval(checkInterval);
       clearTimeout(timer);
+      window.removeEventListener('heroYtPlaying', handlePlaying);
     };
   }, []);
 
@@ -40,10 +54,17 @@ export default function WelcomeOverlay() {
       }).catch(() => {});
     });
     
-    // Dispatch synchronous event so HeroSection can play YT inside this click handler
-    window.dispatchEvent(new CustomEvent('heroPlayMusic'));
+    // Synchronous direct call to HeroSection to preserve user gesture
+    if (typeof (window as any).playHeroMusic === 'function') {
+      (window as any).playHeroMusic();
+    }
     
-    setIsOpen(true);
+    setIsEntering(true);
+    
+    // Fallback: if YT fails to play within 5s of clicking, open it anyway
+    setTimeout(() => {
+      setIsOpen(true);
+    }, 5000);
   };
 
   return (
@@ -68,7 +89,15 @@ export default function WelcomeOverlay() {
               Vibhav's Journey
             </h1>
             <p className="text-xs md:text-sm tracking-[0.4em] text-white/50 mt-4 h-6">
-              {isReady ? (
+              {isEntering ? (
+                <span className="animate-pulse text-rose-300 flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  SYNCING MUSIC...
+                </span>
+              ) : isReady ? (
                 <span className="animate-pulse text-amber-200/80">TAP ANYWHERE TO ENTER</span>
               ) : (
                 <span className="animate-pulse">LOADING EXPERIENCE...</span>

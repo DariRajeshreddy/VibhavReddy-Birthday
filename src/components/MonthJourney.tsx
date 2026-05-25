@@ -235,34 +235,18 @@ export default function MonthJourney() {
         width: '0',
         videoId: ytId,
         playerVars: {
-          autoplay: 0,
+          autoplay: 1,
           controls: 0,
           loop: 1,
           playlist: ytId,
-          mute: 0
+          mute: 1
         },
         events: {
           onReady: (event: any) => {
             ytReadyRef.current = true;
-            event.target.setVolume(0);
             event.target.setLoop(true);
-            // ONLY play if we are ALREADY in the journey section
-            if (ScrollTrigger.getById('journey-pin')?.isActive) {
-              event.target.playVideo();
-              if (!isMutedRef.current) {
-                gsap.killTweensOf(ytVolProxy.current);
-                ytVolProxy.current.vol = 0;
-                gsap.to(ytVolProxy.current, {
-                  vol: 30,
-                  duration: 5,
-                  onUpdate: () => {
-                    if (event.target?.setVolume) {
-                      event.target.setVolume(ytVolProxy.current.vol);
-                    }
-                  }
-                });
-              }
-            }
+            // Silent pre-buffering handled by autoplay:1 and mute:1
+            // syncMusic(onEnter) will unmute it instantly when user scrolls here.
           },
           onStateChange: (event: any) => {
             if (event.data === 0) {
@@ -300,6 +284,7 @@ export default function MonthJourney() {
           } catch (e) { }
 
           if (loadedId === nextYtId) {
+            ytPlayerRef.current.unMute();
             if (ytPlayerRef.current.getPlayerState() !== 1) {
               ytPlayerRef.current.playVideo();
             }
@@ -312,20 +297,11 @@ export default function MonthJourney() {
             suggestedQuality: 'small'
           });
           ytPlayerRef.current.setLoop(true);
-          ytPlayerRef.current.setVolume(0);
+          ytPlayerRef.current.unMute();
           ytPlayerRef.current.playVideo();
           gsap.killTweensOf(ytVolProxy.current);
           if (!isMutedRef.current) {
-            ytVolProxy.current.vol = 0;
-            gsap.to(ytVolProxy.current, {
-              vol: 30,
-              duration: 3,
-              onUpdate: () => {
-                if (ytPlayerRef.current?.setVolume) {
-                  ytPlayerRef.current.setVolume(ytVolProxy.current.vol);
-                }
-              }
-            });
+             ytPlayerRef.current.setVolume(30);
           }
         } catch (e) {
           console.error("YT transition failed", e);
@@ -402,9 +378,11 @@ export default function MonthJourney() {
           end: "+=60000",
           onUpdate: (self) => {
             const numMonths = monthsData.length;
+            // Add a small offset (0.15) so the song triggers slightly earlier during the transition,
+            // rather than waiting for the entire first image to finish animating.
             const currentIndex = Math.min(
               numMonths - 1,
-              Math.floor(self.progress * numMonths)
+              Math.max(0, Math.floor((self.progress * numMonths) + 0.15))
             );
 
             // Auto-unmute when transitioning to a new month to showcase unique BGMs
@@ -630,13 +608,10 @@ export default function MonthJourney() {
         >
           {/* Background Image Backdrop */}
           <div className="absolute inset-0 z-0 overflow-hidden">
-            <Image
+            <img
               src={(data as any).bgImage || `/images/months/month-${data.month}.webp`}
               alt=""
-              fill
-              sizes="100vw"
-              className="object-cover opacity-80 scale-100"
-              quality={50}
+              className="absolute inset-0 w-full h-full object-cover opacity-80 scale-100"
             />
             <div className={`absolute inset-0 bg-black/40`} />
             <div className={`absolute inset-0 bg-gradient-to-br ${data.bg} opacity-30`} />
@@ -690,13 +665,11 @@ export default function MonthJourney() {
                   style={{ zIndex, left: "50%", top: "60%" }}
                 >
                   <div className="month-photo relative w-full h-full shadow-inner bg-slate-50 overflow-hidden">
-                    <Image
+                    <img
                       src={(data as any).photos?.[j] || (data as any).mainPhoto || `/images/months/month-${data.month}.webp`}
                       alt={`Month ${data.month} photo ${j + 1}`}
-                      fill
-                      sizes="(max-width: 768px) 320px, 500px"
-                      className="object-cover"
-                      quality={50}
+                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      draggable="false"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   </div>
