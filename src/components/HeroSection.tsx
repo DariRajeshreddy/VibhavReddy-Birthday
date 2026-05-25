@@ -52,20 +52,13 @@ export default function HeroSection() {
 
     if (ytPlayerRef.current && ytReadyRef.current) {
       try {
+        ytPlayerRef.current.unMute();
         if (ytPlayerRef.current.getPlayerState() !== 1) {
            ytPlayerRef.current.playVideo();
         }
         if (!isMutedRef.current) {
           gsap.killTweensOf(ytVolProxy.current);
-          let currentVol = 0;
-          try { currentVol = ytPlayerRef.current.getVolume() || 0; } catch(e) {}
-          ytVolProxy.current.vol = currentVol;
-          gsap.to(ytVolProxy.current, {
-            vol: 30, duration: 2,
-            onUpdate: () => {
-              try { if (ytPlayerRef.current?.setVolume) ytPlayerRef.current.setVolume(ytVolProxy.current.vol); } catch(e) {}
-            }
-          });
+          if (ytPlayerRef.current.setVolume) ytPlayerRef.current.setVolume(30);
         }
       } catch (e) {}
     }
@@ -101,6 +94,7 @@ export default function HeroSection() {
     };
     
     window.addEventListener("click", handleGlobalInteraction, { once: true });
+    window.addEventListener("heroPlayMusic", handleGlobalInteraction, { once: true });
     window.addEventListener("wheel", handleGlobalInteraction, { once: true, passive: true });
     window.addEventListener("touchstart", handleGlobalInteraction, { once: true, passive: true });
     window.addEventListener("keydown", handleGlobalInteraction, { once: true });
@@ -116,21 +110,19 @@ export default function HeroSection() {
     const initYoutubePlayer = () => {
       if (!ytContainerRef.current || ytPlayerRef.current) return;
       ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
-        height: '0', width: '0', videoId: ytId,
-        playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: ytId, mute: 0 },
+        height: '10', width: '10', videoId: ytId,
+        playerVars: { autoplay: 1, controls: 0, loop: 1, playlist: ytId, mute: 1, playsinline: 1 },
         events: {
           onReady: (event: any) => {
             ytReadyRef.current = true;
-            event.target.setVolume(30);
             event.target.setLoop(true);
-            if (isMutedRef.current) {
-              event.target.mute();
-            }
-            if (hasInteractedRef.current) {
-              playYtWithFade();
-            }
+            // Don't dispatch heroYtReady here. We wait for it to actually start playing silently.
           },
           onStateChange: (event: any) => {
+            // State 1 = Playing. If it starts playing silently in the background, it's fully buffered!
+            if (event.data === 1 && !hasInteractedRef.current) {
+              window.dispatchEvent(new CustomEvent('heroYtReady'));
+            }
             if (event.data === 0) event.target.playVideo();
           }
         }
@@ -291,14 +283,11 @@ export default function HeroSection() {
         )}
       </button>
 
-      {/* Grain Background Effect (replacing missing noise.png) */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none mix-blend-overlay"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-      />
+
 
       {/* Stars Background */}
       <div className="absolute inset-0 z-0">
-        {Array.from({ length: 60 }).map((_, i) => (
+        {Array.from({ length: 20 }).map((_, i) => (
           <div
             key={i}
             className="star absolute rounded-full bg-white opacity-0"
@@ -308,7 +297,6 @@ export default function HeroSection() {
               left: `${Math.abs(Math.cos(i * 1.3)) * 100}%`,
               width: `${Math.abs(Math.sin(i * 1.7)) * 2 + 1}px`,
               height: `${Math.abs(Math.sin(i * 1.7)) * 2 + 1}px`,
-              boxShadow: "0 0 8px 2px rgba(255,255,255,0.3)",
             }}
           />
         ))}

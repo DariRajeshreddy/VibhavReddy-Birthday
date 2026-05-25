@@ -43,9 +43,9 @@ export default function EmotionalSection() {
     <section ref={containerRef} className="relative h-screen w-full overflow-hidden bg-slate-950 flex items-center justify-center">
       {/* Background Images */}
       <div className="absolute inset-0 z-0 opacity-50">
-        <div className="absolute inset-0 bg-[url('/images/months/month1/1.png')] bg-cover bg-top md:bg-center" style={{ filter: "grayscale(30%) sepia(20%)" }}></div>
-        <div className="bg-img-2 absolute inset-0 opacity-0 bg-[url('/images/months/month2/1.png')] bg-cover bg-top md:bg-center" style={{ filter: "grayscale(30%) sepia(20%)" }}></div>
-        <div className="bg-img-3 absolute inset-0 opacity-0 bg-[url('/images/months/DSC_3700.JPG')] bg-cover bg-[position:25%_top] sm:bg-center" style={{ filter: "grayscale(30%) sepia(20%)" }}></div>
+        <div className="absolute inset-0 bg-[url('/images/months/month1/1.webp')] bg-cover bg-top md:bg-center" style={{ filter: "grayscale(30%) sepia(20%)" }}></div>
+        <div className="bg-img-2 absolute inset-0 opacity-0 bg-[url('/images/months/month2/1.webp')] bg-cover bg-top md:bg-center" style={{ filter: "grayscale(30%) sepia(20%)" }}></div>
+        <div className="bg-img-3 absolute inset-0 opacity-0 bg-[url('/images/months/DSC_3700.webp')] bg-cover bg-[position:25%_top] sm:bg-center" style={{ filter: "grayscale(30%) sepia(20%)" }}></div>
       </div>
 
       <div className="bg-overlay absolute inset-0 bg-slate-950/40 z-10" />

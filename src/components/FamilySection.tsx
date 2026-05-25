@@ -213,20 +213,20 @@ export default function FamilySection() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center max-w-6xl mx-auto">
-            <div className="family-photo md:col-span-1 aspect-[4/3] md:aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group cursor-pointer" onClick={() => setSelectedImage("/images/family/nanna/DSC_3772.JPG")}>
+            <div className="family-photo md:col-span-1 aspect-[4/3] md:aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group cursor-pointer" onClick={() => setSelectedImage("/images/family/nanna/DSC_3772.webp")}>
               <div className="w-full h-full rounded flex items-center justify-center overflow-hidden relative">
-                <Image src="/images/family/nanna/DSC_3772.JPG" alt="Nanna Family 1" fill className="object-cover object-top" sizes="(max-width: 768px) 100vw, 33vw" />
+                <Image src="/images/family/nanna/DSC_3772.webp" alt="Nanna Family 1" fill className="object-cover object-top" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" quality={50} />
               </div>
               <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
             </div>
-            <div className="family-photo md:col-span-1 aspect-[4/3] md:aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:translate-y-12 cursor-pointer" onClick={() => setSelectedImage("/images/family/nanna/DSC_3782.JPG")}>
+            <div className="family-photo md:col-span-1 aspect-[4/3] md:aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:translate-y-12 cursor-pointer" onClick={() => setSelectedImage("/images/family/nanna/DSC_3782.webp")}>
               <div className="w-full h-full rounded flex items-center justify-center overflow-hidden relative">
-                <Image src="/images/family/nanna/DSC_3782.JPG" alt="Nanna Family 2" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                <Image src="/images/family/nanna/DSC_3782.webp" alt="Nanna Family 2" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" quality={50} />
               </div>
             </div>
-            <div className="family-photo md:col-span-1 aspect-[4/3] md:aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:-translate-y-8 cursor-pointer" onClick={() => setSelectedImage("/images/family/nanna/DSC_3798.JPG")}>
+            <div className="family-photo md:col-span-1 aspect-[4/3] md:aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:-translate-y-8 cursor-pointer" onClick={() => setSelectedImage("/images/family/nanna/DSC_3798.webp")}>
               <div className="w-full h-full rounded flex items-center justify-center overflow-hidden relative">
-                <Image src="/images/family/nanna/DSC_3798.JPG" alt="Nanna Family 3" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                <Image src="/images/family/nanna/DSC_3798.webp" alt="Nanna Family 3" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" quality={50} />
               </div>
             </div>
           </div>
@@ -242,19 +242,19 @@ export default function FamilySection() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center max-w-6xl mx-auto">
-            <div className="family-photo md:col-span-1 aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:translate-y-8 cursor-pointer" onClick={() => setSelectedImage("/images/family/amma/DSC_3922.JPG")}>
+            <div className="family-photo md:col-span-1 aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:translate-y-8 cursor-pointer" onClick={() => setSelectedImage("/images/family/amma/DSC_3922.webp")}>
               <div className="w-full h-full rounded flex items-center justify-center overflow-hidden relative">
-                <Image src="/images/family/amma/DSC_3922.JPG" alt="Amma Family 1" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                <Image src="/images/family/amma/DSC_3922.webp" alt="Amma Family 1" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" quality={50} />
               </div>
             </div>
-            <div className="family-photo md:col-span-1 aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:-translate-y-12 cursor-pointer" onClick={() => setSelectedImage("/images/family/amma/DSC_3928.JPG")}>
+            <div className="family-photo md:col-span-1 aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:-translate-y-12 cursor-pointer" onClick={() => setSelectedImage("/images/family/amma/DSC_3928.webp")}>
               <div className="w-full h-full rounded flex items-center justify-center overflow-hidden relative">
-                <Image src="/images/family/amma/DSC_3928.JPG" alt="Amma Family 2" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                <Image src="/images/family/amma/DSC_3928.webp" alt="Amma Family 2" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" quality={50} />
               </div>
             </div>
-            <div className="family-photo md:col-span-1 aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:translate-y-4 cursor-pointer" onClick={() => setSelectedImage("/images/family/amma/DSC_3931.JPG")}>
+            <div className="family-photo md:col-span-1 aspect-[4/3] relative rounded-lg border border-amber-500/30 p-2 backdrop-blur-sm shadow-[0_0_30px_rgba(251,191,36,0.1)] group md:translate-y-4 cursor-pointer" onClick={() => setSelectedImage("/images/family/amma/DSC_3931.webp")}>
               <div className="w-full h-full rounded flex items-center justify-center overflow-hidden relative">
-                <Image src="/images/family/amma/DSC_3931.JPG" alt="Amma Family 3" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                <Image src="/images/family/amma/DSC_3931.webp" alt="Amma Family 3" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" quality={50} />
               </div>
             </div>
           </div>
@@ -278,6 +278,8 @@ export default function FamilySection() {
               fill
               className="object-contain"
               sizes="100vw"
+              loading="lazy"
+              quality={80}
             />
           </div>
         </div>

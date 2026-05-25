@@ -5,6 +5,20 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function WelcomeOverlay() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const handleReady = () => setIsReady(true);
+    window.addEventListener('heroYtReady', handleReady);
+    
+    // Fallback: If YT takes more than 4s to load, allow the user to enter anyway
+    const timer = setTimeout(() => setIsReady(true), 4000);
+
+    return () => {
+      window.removeEventListener('heroYtReady', handleReady);
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Prevent scrolling when overlay is active
   useEffect(() => {
@@ -26,6 +40,9 @@ export default function WelcomeOverlay() {
       }).catch(() => {});
     });
     
+    // Dispatch synchronous event so HeroSection can play YT inside this click handler
+    window.dispatchEvent(new CustomEvent('heroPlayMusic'));
+    
     setIsOpen(true);
   };
 
@@ -36,13 +53,10 @@ export default function WelcomeOverlay() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
           transition={{ duration: 1, ease: "easeInOut" }}
-          onClick={handleEnter}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-slate-950 text-amber-50 cursor-pointer"
+          onClick={isReady ? handleEnter : undefined}
+          className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-slate-950 text-amber-50 transition-opacity ${isReady ? 'cursor-pointer opacity-100' : 'cursor-wait opacity-90'}`}
         >
-          {/* Grain Background Effect (replacing missing noise.png) */}
-          <div className="absolute inset-0 z-0 opacity-20 pointer-events-none mix-blend-overlay" 
-               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
-          />
+
           
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
@@ -53,8 +67,12 @@ export default function WelcomeOverlay() {
             <h1 className="text-3xl md:text-5xl font-serif tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase mb-4">
               Vibhav's Journey
             </h1>
-            <p className="text-xs md:text-sm tracking-[0.4em] text-white/50 animate-pulse mt-4">
-              TAP ANYWHERE TO ENTER
+            <p className="text-xs md:text-sm tracking-[0.4em] text-white/50 mt-4 h-6">
+              {isReady ? (
+                <span className="animate-pulse text-amber-200/80">TAP ANYWHERE TO ENTER</span>
+              ) : (
+                <span className="animate-pulse">LOADING EXPERIENCE...</span>
+              )}
             </p>
           </motion.div>
         </motion.div>

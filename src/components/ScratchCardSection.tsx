@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWindowSize } from "react-use";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 
 declare global {
   interface Window {
@@ -35,9 +36,9 @@ export default function ScratchCardSection() {
   const lastPoint = useRef<{ x: number, y: number } | null>(null);
 
   const additionalPhotos = [
-    "/images/months/scratchcard/2.png",
-    "/images/months/scratchcard/3.png",
-    "/images/months/scratchcard/4.png"
+    "/images/months/scratchcard/2.webp",
+    "/images/months/scratchcard/3.webp",
+    "/images/months/scratchcard/4.webp"
   ];
 
   useEffect(() => {
@@ -259,10 +260,14 @@ export default function ScratchCardSection() {
             transition: { duration: 10, repeat: Infinity, ease: "linear" }
           } : {}}
         >
-          <img 
-            src="/images/months/scratchcard/1.png" 
+          <Image 
+            src="/images/months/scratchcard/1.webp" 
             alt="Surprise"
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 450px"
+            className="object-cover"
+            loading="lazy"
+            quality={60}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         </motion.div>
@@ -315,9 +320,9 @@ export default function ScratchCardSection() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.2 }}
-                    className="aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 hover:scale-105 transition-transform duration-500"
+                    className="relative aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 hover:scale-105 transition-transform duration-500"
                   >
-                    <img src={photo} alt={`Memory ${i+2}`} className="w-full h-full object-cover" />
+                    <Image src={photo} alt={`Memory ${i+2}`} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" loading="lazy" quality={60} />
                   </motion.div>
                 ))}
               </motion.div>

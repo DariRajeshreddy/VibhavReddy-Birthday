@@ -68,12 +68,13 @@ export default function CartoonSection() {
         {/* Main character cartoon */}
         <div className="main-character z-20 w-64 h-80 md:w-80 md:h-[400px] bg-white rounded-3xl shadow-dreamy border-8 border-white flex items-center justify-center overflow-hidden relative">
            <Image 
-             src="/images/image.png" 
+             src="/images/image.webp" 
              alt="Cartoon Vibhav" 
              fill 
              className="object-cover object-center"
              sizes="(max-width: 768px) 256px, 320px"
-             priority
+             loading="lazy"
+             quality={60}
            />
         </div>
 

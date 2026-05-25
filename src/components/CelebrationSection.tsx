@@ -151,6 +151,7 @@ export default function CelebrationSection({ name = "Little One" }: { name?: str
                 src="/images/months/rentpay.gif" 
                 alt="Genie" 
                 className="w-full h-full object-contain brightness-110"
+                loading="lazy"
               />
             )}
           </motion.div>

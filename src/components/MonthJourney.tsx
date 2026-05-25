@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 declare global {
   interface Window {
@@ -21,14 +22,14 @@ const monthsData = [
     bg: "from-blue-600/20 to-indigo-600/20",
     accent: "text-white",
     bgm: "https://music.youtube.com/watch?v=IMb_PVtW5G0&si=dPdgaZ_FCYbDWKfZ",
-    bgImage: "/images/months/month1/1.png",
-    mainPhoto: "/images/months/month1/1.png",
+    bgImage: "/images/months/month1/1.webp",
+    mainPhoto: "/images/months/month1/1.webp",
     photos: [
-      "/images/months/month1/1.png",
-      "/images/months/month1/2.png",
-      "/images/months/month1/3.png",
-      "/images/months/month1/4.png",
-      "/images/months/month1/5.png"
+      "/images/months/month1/1.webp",
+      "/images/months/month1/2.webp",
+      "/images/months/month1/3.webp",
+      "/images/months/month1/4.webp",
+      "/images/months/month1/5.webp"
     ]
   },
   {
@@ -37,13 +38,13 @@ const monthsData = [
     bg: "from-indigo-900 to-purple-900",
     accent: "text-purple-200",
     bgm: "https://music.youtube.com/watch?v=15cl2BjUNKk&si=Xw31cED63L3lc_Jq",
-    bgImage: "/images/months/month2/1.png",
-    mainPhoto: "/images/months/month2/1.png",
+    bgImage: "/images/months/month2/1.webp",
+    mainPhoto: "/images/months/month2/1.webp",
     photos: [
-      "/images/months/month2/1.png",
-      "/images/months/month2/2.png",
-      "/images/months/month2/3.png",
-      "/images/months/month2/4.png"
+      "/images/months/month2/1.webp",
+      "/images/months/month2/2.webp",
+      "/images/months/month2/3.webp",
+      "/images/months/month2/4.webp"
     ]
   },
   {
@@ -52,14 +53,14 @@ const monthsData = [
     bg: "from-purple-900 to-fuchsia-900",
     accent: "text-fuchsia-200",
     bgm: "https://music.youtube.com/watch?v=CxjtCLDhqYs&si=xbMIhyhvFdDxLmoo",
-    bgImage: "/images/months/month3/1.png",
-    mainPhoto: "/images/months/month3/1.png",
+    bgImage: "/images/months/month3/1.webp",
+    mainPhoto: "/images/months/month3/1.webp",
     photos: [
-      "/images/months/month3/1.png",
-      "/images/months/month3/2.png",
-      "/images/months/month3/3.png",
-      "/images/months/month3/4.png",
-      "/images/months/month3/5.png"
+      "/images/months/month3/1.webp",
+      "/images/months/month3/2.webp",
+      "/images/months/month3/3.webp",
+      "/images/months/month3/4.webp",
+      "/images/months/month3/5.webp"
     ]
   },
   {
@@ -68,14 +69,14 @@ const monthsData = [
     bg: "from-fuchsia-900 to-rose-900",
     accent: "text-rose-200",
     bgm: "https://music.youtube.com/watch?v=SjmH9Hz4mOM&si=oxIMnLRHB31bk0Cp",
-    bgImage: "/images/months/month4/2.png",
-    mainPhoto: "/images/months/month4/1.png",
+    bgImage: "/images/months/month4/2.webp",
+    mainPhoto: "/images/months/month4/1.webp",
     photos: [
-      "/images/months/month4/1.png",
-      "/images/months/month4/2.png",
-      "/images/months/month4/3.png",
-      "/images/months/month4/4.png",
-      "/images/months/month4/5.png"
+      "/images/months/month4/1.webp",
+      "/images/months/month4/2.webp",
+      "/images/months/month4/3.webp",
+      "/images/months/month4/4.webp",
+      "/images/months/month4/5.webp"
     ]
   },
   {
@@ -84,62 +85,62 @@ const monthsData = [
     bg: "from-rose-900 to-orange-900",
     accent: "text-orange-200",
     bgm: "https://music.youtube.com/watch?v=PIaVDzkb-Nc&si=TQKpmBFezpaVYp_l",
-    bgImage: "/images/months/month5/3.png",
-    mainPhoto: "/images/months/month5/1.png",
+    bgImage: "/images/months/month5/3.webp",
+    mainPhoto: "/images/months/month5/1.webp",
     photos: [
-      "/images/months/month5/1.png",
-      "/images/months/month5/2.png",
-      "/images/months/month5/3.png",
-      "/images/months/month5/4.png",
-      "/images/months/month5/5.png"
+      "/images/months/month5/1.webp",
+      "/images/months/month5/2.webp",
+      "/images/months/month5/3.webp",
+      "/images/months/month5/4.webp",
+      "/images/months/month5/5.webp"
     ]
   },
-  { 
-    month: 6, 
-    title: "Starting Solids", 
-    bg: "from-orange-900 to-amber-900", 
-    accent: "text-amber-200", 
+  {
+    month: 6,
+    title: "Starting Solids",
+    bg: "from-orange-900 to-amber-900",
+    accent: "text-amber-200",
     bgm: "https://youtube.com/shorts/8IOU4q3Cq4Y?si=1_G1pfjBKkBmKORs",
-    bgImage: "/images/months/month6/1.png",
-    mainPhoto: "/images/months/month6/1.png",
+    bgImage: "/images/months/month6/1.webp",
+    mainPhoto: "/images/months/month6/1.webp",
     photos: [
-      "/images/months/month6/1.png",
-      "/images/months/month6/2.png",
-      "/images/months/month6/3.png",
-      "/images/months/month6/4.png",
-      "/images/months/month6/5.png"
+      "/images/months/month6/1.webp",
+      "/images/months/month6/2.webp",
+      "/images/months/month6/3.webp",
+      "/images/months/month6/4.webp",
+      "/images/months/month6/5.webp"
     ]
   },
-  { 
-    month: 7, 
-    title: "Like Father, Like Son", 
-    bg: "from-amber-900 to-yellow-900", 
-    accent: "text-yellow-200", 
+  {
+    month: 7,
+    title: "Like Father, Like Son",
+    bg: "from-amber-900 to-yellow-900",
+    accent: "text-yellow-200",
     bgm: "https://music.youtube.com/watch?v=uOeLCNqTkWA&si=O0sp2VurKFL3fEyQ",
-    bgImage: "/images/months/month7/1.png",
-    mainPhoto: "/images/months/month7/1.png",
+    bgImage: "/images/months/month7/1.webp",
+    mainPhoto: "/images/months/month7/1.webp",
     photos: [
-      "/images/months/month7/1.png",
-      "/images/months/month7/2.png",
-      "/images/months/month7/3.png",
-      "/images/months/month7/4.png",
-      "/images/months/month7/5.png"
+      "/images/months/month7/1.webp",
+      "/images/months/month7/2.webp",
+      "/images/months/month7/3.webp",
+      "/images/months/month7/4.webp",
+      "/images/months/month7/5.webp"
     ]
   },
-  { 
-    month: 8, 
-    title: "Up, Up and Away!", 
-    bg: "from-yellow-900 to-lime-900", 
-    accent: "text-lime-200", 
+  {
+    month: 8,
+    title: "Up, Up and Away!",
+    bg: "from-yellow-900 to-lime-900",
+    accent: "text-lime-200",
     bgm: "https://youtube.com/shorts/BAxXFBnY4lI?si=lfayHq3xNB655Pvc",
-    bgImage: "/images/months/month8/1.png",
-    mainPhoto: "/images/months/month8/1.png",
+    bgImage: "/images/months/month8/1.webp",
+    mainPhoto: "/images/months/month8/1.webp",
     photos: [
-      "/images/months/month8/1.png",
-      "/images/months/month8/2.png",
-      "/images/months/month8/3.png",
-      "/images/months/month8/4.png",
-      "/images/months/month8/5.png"
+      "/images/months/month8/1.webp",
+      "/images/months/month8/2.webp",
+      "/images/months/month8/3.webp",
+      "/images/months/month8/4.webp",
+      "/images/months/month8/5.webp"
     ]
   },
   {
@@ -148,14 +149,14 @@ const monthsData = [
     bg: "from-lime-900 to-emerald-900",
     accent: "text-emerald-200",
     bgm: "https://music.youtube.com/watch?v=xnAzGW-Nmds&si=jtcOLy4_2V0piRBv",
-    bgImage: "/images/months/month9/1.png",
-    mainPhoto: "/images/months/month9/1.png",
+    bgImage: "/images/months/month9/1.webp",
+    mainPhoto: "/images/months/month9/1.webp",
     photos: [
-      "/images/months/month9/1.png",
-      "/images/months/month9/2.png",
-      "/images/months/month9/3.png",
-      "/images/months/month9/4.png",
-      "/images/months/month9/5.png"
+      "/images/months/month9/1.webp",
+      "/images/months/month9/2.webp",
+      "/images/months/month9/3.webp",
+      "/images/months/month9/4.webp",
+      "/images/months/month9/5.webp"
     ]
   },
   {
@@ -164,14 +165,14 @@ const monthsData = [
     bg: "from-emerald-900 to-teal-900",
     accent: "text-teal-200",
     bgm: "https://music.youtube.com/watch?v=eXV98TzczBU&si=rIN10xcxXyBkfQmg",
-    bgImage: "/images/months/month10/1.jpg",
-    mainPhoto: "/images/months/month10/1.jpg",
+    bgImage: "/images/months/month10/1.webp",
+    mainPhoto: "/images/months/month10/1.webp",
     photos: [
-      "/images/months/month10/1.jpg",
-      "/images/months/month10/2.jpg",
-      "/images/months/month10/3.jpg",
-      "/images/months/month10/4.jpg",
-      "/images/months/month10/5.jpg"
+      "/images/months/month10/1.webp",
+      "/images/months/month10/2.webp",
+      "/images/months/month10/3.webp",
+      "/images/months/month10/4.webp",
+      "/images/months/month10/5.webp"
     ]
   },
   {
@@ -180,14 +181,14 @@ const monthsData = [
     bg: "from-teal-900 to-cyan-900",
     accent: "text-cyan-200",
     bgm: "https://music.youtube.com/watch?v=hTFDt-L26h4&si=ayJtxqZ8TKtg3Nwh",
-    bgImage: "/images/months/month11/1.png",
-    mainPhoto: "/images/months/month11/1.png",
+    bgImage: "/images/months/month11/1.webp",
+    mainPhoto: "/images/months/month11/1.webp",
     photos: [
-      "/images/months/month11/1.png",
-      "/images/months/month11/2.png",
-      "/images/months/month11/3.png",
-      "/images/months/month11/4.png",
-      "/images/months/month11/5.png"
+      "/images/months/month11/1.webp",
+      "/images/months/month11/2.webp",
+      "/images/months/month11/3.webp",
+      "/images/months/month11/4.webp",
+      "/images/months/month11/5.webp"
     ]
   },
 ];
@@ -204,6 +205,7 @@ export default function MonthJourney() {
   const ytReadyRef = useRef(false);
   const ytVolProxy = useRef({ vol: 0 }); // Proxy object to handle YouTube volume animations
   const audioRef = useRef<HTMLAudioElement>(null);
+  const musicTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const getYoutubeId = (url: string) => {
     if (!url) return null;
@@ -418,7 +420,10 @@ export default function MonthJourney() {
             if (nextBgm && nextBgm !== currentBgmRef.current) {
               currentBgmRef.current = nextBgm;
               setCurrentBgm(nextBgm);
-              syncMusic(nextBgm);
+              if (musicTimeoutRef.current) clearTimeout(musicTimeoutRef.current);
+              musicTimeoutRef.current = setTimeout(() => {
+                syncMusic(nextBgm);
+              }, 1000);
             }
           },
           onEnter: () => {
@@ -625,12 +630,15 @@ export default function MonthJourney() {
         >
           {/* Background Image Backdrop */}
           <div className="absolute inset-0 z-0 overflow-hidden">
-            <img
-              src={(data as any).bgImage || `/images/months/month-${data.month}.png`}
+            <Image
+              src={(data as any).bgImage || `/images/months/month-${data.month}.webp`}
               alt=""
-              className="w-full h-full object-cover opacity-80 scale-100"
+              fill
+              sizes="100vw"
+              className="object-cover opacity-80 scale-100"
+              quality={50}
             />
-            <div className={`absolute inset-0 bg-black/30 backdrop-blur-[2px]`} />
+            <div className={`absolute inset-0 bg-black/40`} />
             <div className={`absolute inset-0 bg-gradient-to-br ${data.bg} opacity-30`} />
             <div className="absolute inset-0 bg-white/5" />
           </div>
@@ -682,10 +690,13 @@ export default function MonthJourney() {
                   style={{ zIndex, left: "50%", top: "60%" }}
                 >
                   <div className="month-photo relative w-full h-full shadow-inner bg-slate-50 overflow-hidden">
-                    <img
-                      src={(data as any).photos?.[j] || (data as any).mainPhoto || `/images/months/month-${data.month}.png`}
+                    <Image
+                      src={(data as any).photos?.[j] || (data as any).mainPhoto || `/images/months/month-${data.month}.webp`}
                       alt={`Month ${data.month} photo ${j + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(max-width: 768px) 320px, 500px"
+                      className="object-cover"
+                      quality={50}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   </div>

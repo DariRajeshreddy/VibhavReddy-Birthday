@@ -77,6 +77,7 @@ export default function MonthSection({
               sizes="(min-width: 1024px) 42vw, 90vw"
               className="object-cover transition duration-700 group-hover:scale-105"
               priority={month <= 2}
+              quality={60}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-transparent to-white/5" />
           </div>
