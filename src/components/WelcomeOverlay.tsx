@@ -46,14 +46,6 @@ export default function WelcomeOverlay() {
   }, [isOpen]);
 
   const handleEnter = () => {
-    // Unlock all audio contexts globally
-    document.querySelectorAll('audio').forEach(audio => {
-      audio.play().then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-      }).catch(() => {});
-    });
-    
     // Synchronous direct call to HeroSection to preserve user gesture
     if (typeof (window as any).playHeroMusic === 'function') {
       (window as any).playHeroMusic();

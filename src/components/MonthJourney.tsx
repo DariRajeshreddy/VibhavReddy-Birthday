@@ -284,6 +284,7 @@ export default function MonthJourney() {
           } catch (e) { }
 
           if (loadedId === nextYtId) {
+            ytPlayerRef.current.seekTo(0, true);
             ytPlayerRef.current.unMute();
             if (ytPlayerRef.current.getPlayerState() !== 1) {
               ytPlayerRef.current.playVideo();

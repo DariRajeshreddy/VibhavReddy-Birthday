@@ -52,10 +52,10 @@ export default function HeroSection() {
 
     if (ytPlayerRef.current && ytReadyRef.current) {
       try {
-        ytPlayerRef.current.unMute();
         if (ytPlayerRef.current.getPlayerState() !== 1) {
            ytPlayerRef.current.playVideo();
         }
+        ytPlayerRef.current.unMute();
         if (!isMutedRef.current) {
           gsap.killTweensOf(ytVolProxy.current);
           if (ytPlayerRef.current.setVolume) ytPlayerRef.current.setVolume(30);
