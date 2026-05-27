@@ -214,7 +214,8 @@ export default function MonthJourney() {
   const isAutoScrollingRef = useRef(false);
   const targetMonthRef = useRef(0);
   const interruptedMonthsRef = useRef<{ [key: number]: boolean }>({});
-  const manualScrollCooldownsRef = useRef<{ [key: number]: NodeJS.Timeout }>({});
+  const snapDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const atCollageRef = useRef<number>(-1);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const stRef = useRef<ScrollTrigger | null>(null);
   const scrollIntentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -246,18 +247,8 @@ export default function MonthJourney() {
     }
   };
 
-  const triggerManualScrollCooldown = (monthIndex: number) => {
-    interruptedMonthsRef.current[monthIndex] = true;
-    if (manualScrollCooldownsRef.current[monthIndex]) {
-      clearTimeout(manualScrollCooldownsRef.current[monthIndex]);
-    }
-    manualScrollCooldownsRef.current[monthIndex] = setTimeout(() => {
-      console.log(`[ManualCooldown] Cooldown ended for month ${monthIndex + 1}. Re-enabling auto-scroll.`);
-      interruptedMonthsRef.current[monthIndex] = false;
-    }, 3000);
-  };
 
-  const triggerAutoScroll = (targetIndex: number) => {
+  const triggerAutoScroll = (targetIndex: number, interruptDelay = 500) => {
     if (isAutoScrollingRef.current) {
       console.log("[AutoScroll] Already active, ignoring request for index:", targetIndex);
       return;
@@ -297,15 +288,37 @@ export default function MonthJourney() {
     if (targetScroll && window.scrollY < targetScroll - 20) {
       isAutoScrollingRef.current = true;
       
+      const preventDefault = (e: Event) => {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      };
+
+      const blockNativeScroll = () => {
+        window.addEventListener("wheel", preventDefault, { passive: false });
+        window.addEventListener("touchmove", preventDefault, { passive: false });
+      };
+
+      const unblockNativeScroll = () => {
+        window.removeEventListener("wheel", preventDefault);
+        window.removeEventListener("touchmove", preventDefault);
+      };
+
+      blockNativeScroll();
+
       const dist = targetScroll - window.scrollY;
       const dur = Math.max(2, dist / 100); // Cinematic 100px per sec
       
       console.log(`[AutoScroll] Starting proxy scroll. Target: ${targetScroll}, Duration: ${dur}s`);
 
-      // 1. Temporarily pause Lenis so it does not intercept our native window.scrollTo updates
+      // 1. Temporarily pause Lenis and instantly clear any scroll momentum!
       if ((window as any).lenis) {
-        try { (window as any).lenis.stop(); } catch (e) {}
+        try { 
+          (window as any).lenis.stop(); 
+          (window as any).lenis.scrollTo(window.scrollY, { immediate: true });
+        } catch (e) {}
       }
+      window.scrollTo(0, window.scrollY);
 
       // Kill any currently active scroll and listeners first
       if (killActiveScrollRef.current) {
@@ -368,7 +381,7 @@ export default function MonthJourney() {
       const killScroll = () => {
         console.log("[AutoScroll] Scroll stopped by user interaction.");
         clearIdleTransitionTimer();
-        triggerManualScrollCooldown(targetIndex);
+        interruptedMonthsRef.current[targetIndex] = true;
         if (activeTween) {
           activeTween.kill();
         }
@@ -377,17 +390,16 @@ export default function MonthJourney() {
         removeInteractionListeners();
       };
 
-      const interactionEvents = ["wheel", "touchmove", "pointerdown"];
-      let listenersAdded = false;
+      const interactionEvents = ["pointerdown"];
       const addListenersTimeout = setTimeout(() => {
         interactionEvents.forEach(event => {
           window.addEventListener(event, killScroll, { passive: true });
         });
-        listenersAdded = true;
-      }, 500);
+      }, interruptDelay);
 
       const removeInteractionListeners = () => {
         clearTimeout(addListenersTimeout);
+        unblockNativeScroll();
         interactionEvents.forEach(event => {
           window.removeEventListener(event, killScroll);
         });
@@ -577,11 +589,8 @@ export default function MonthJourney() {
             const tlAnim = tlRef.current;
             const currentScroll = window.scrollY;
             let currentIndex = currentMonthRef.current;
-            if (!isAutoScrollingRef.current) {
-              clearIdleTransitionTimer();
-              triggerManualScrollCooldown(currentIndex);
-            }
-            
+
+            // --- Determine current month index from scroll position ---
             if (tlAnim) {
               for (let i = 0; i < numMonths; i++) {
                 const lTime = tlAnim.labels[`start-${i}`];
@@ -600,7 +609,7 @@ export default function MonthJourney() {
               );
             }
 
-            // Auto-unmute when transitioning to a new month to showcase unique BGMs
+            // Auto-unmute when transitioning to a new month
             if (currentIndex !== currentMonthRef.current) {
               currentMonthRef.current = currentIndex;
               if (isMutedRef.current) {
@@ -619,7 +628,9 @@ export default function MonthJourney() {
               }, 1000);
             }
 
-            // Auto-scroll logic Check
+            // Skip auto-scroll logic if we are currently in a programmatic scroll
+            if (isAutoScrollingRef.current) return;
+
             if (tlAnim) {
                let activeMonth = 0;
                for (let i = 0; i < numMonths; i++) {
@@ -627,18 +638,11 @@ export default function MonthJourney() {
                   if (lTime !== undefined) {
                      const lProg = lTime / tlAnim.duration();
                      const startScroll = self.start + (self.end - self.start) * lProg;
-                     if (currentScroll >= startScroll - 50) {
-                        activeMonth = i;
-                      }
-                   }
-                }
+                     if (currentScroll >= startScroll - 50) activeMonth = i;
+                  }
+               }
 
-               for (let m = activeMonth; m < numMonths; m++) {
-                   interruptedMonthsRef.current[m] = false;
-                }
-
-               // One Scroll to Next Month Logic
-               // If they scroll down (direction > 0) while looking at the collage, trigger next month auto-scroll
+               // --- COLLAGE ZONE: One-scroll snap to next month ---
                const collageTime = tlAnim.labels[`collage-${activeMonth}`];
                const endTime = tlAnim.labels[`end-${activeMonth}`];
                if (collageTime !== undefined && endTime !== undefined) {
@@ -646,39 +650,89 @@ export default function MonthJourney() {
                   const endProg = endTime / tlAnim.duration();
                   const collageScroll = self.start + (self.end - self.start) * collageProg;
                   const endScroll = self.start + (self.end - self.start) * endProg;
-                  
-                  if (currentScroll >= collageScroll - 100 && currentScroll <= endScroll + 300 && self.direction > 0) {
-                     const nextMonthIndex = activeMonth + 1;
-                     if (nextMonthIndex < numMonths && !isAutoScrollingRef.current) {
-                        console.log("[OneScroll] Triggering cinematic scroll to next month:", nextMonthIndex);
-                        interruptedMonthsRef.current[nextMonthIndex] = false;
-                        targetMonthRef.current = nextMonthIndex;
-                        triggerAutoScroll(nextMonthIndex);
+                  const inCollageZone = currentScroll >= collageScroll - 100 && currentScroll <= endScroll + 500;
+
+                  if (inCollageZone) {
+                     // Track that we are at this collage
+                     if (atCollageRef.current !== activeMonth) {
+                        atCollageRef.current = activeMonth;
+                        console.log(`[Collage] Entered collage zone for month ${activeMonth + 1}`);
                      }
+
+                     // If scrolling forward, immediately snap to the START of next month,
+                     // then let the PHOTO ZONE auto-scroll kick in automatically.
+                     if (self.direction > 0) {
+                        const nextMonthIndex = activeMonth + 1;
+                        if (nextMonthIndex < numMonths) {
+                           if (snapDebounceRef.current) clearTimeout(snapDebounceRef.current);
+                           snapDebounceRef.current = setTimeout(() => {
+                              if (!isAutoScrollingRef.current) {
+                                 const st2 = stRef.current || ScrollTrigger.getById("journey-pin");
+                                 const tl2 = tlRef.current;
+                                 if (!st2 || !tl2) return;
+                                 const startLabelTime = tl2.labels[`start-${nextMonthIndex}`];
+                                 if (startLabelTime === undefined) return;
+                                 const startProg = startLabelTime / tl2.duration();
+                                 const snapTarget = Math.round(st2.start + (st2.end - st2.start) * startProg) + 50;
+
+                                 console.log(`[OneScroll] Snapping to start of month ${nextMonthIndex + 1} (scroll: ${snapTarget})`);
+                                 isAutoScrollingRef.current = true;
+
+                                 // Block native scroll during snap
+                                 const snapPreventDefault = (e: Event) => { if (e.cancelable) e.preventDefault(); };
+                                 window.addEventListener("wheel", snapPreventDefault, { passive: false });
+                                 window.addEventListener("touchmove", snapPreventDefault, { passive: false });
+                                 if ((window as any).lenis) { try { (window as any).lenis.stop(); } catch(e) {} }
+
+                                 const snapProxy = { y: window.scrollY };
+                                 gsap.to(snapProxy, {
+                                    y: snapTarget,
+                                    duration: 0.8,
+                                    ease: "power2.inOut",
+                                    onUpdate: () => window.scrollTo(0, snapProxy.y),
+                                    onComplete: () => {
+                                       window.removeEventListener("wheel", snapPreventDefault);
+                                       window.removeEventListener("touchmove", snapPreventDefault);
+                                       if ((window as any).lenis) { try { (window as any).lenis.start(); } catch(e) {} }
+                                       isAutoScrollingRef.current = false;
+                                       // Reset target so PHOTO ZONE sees this as a new month and auto-scrolls
+                                       interruptedMonthsRef.current[nextMonthIndex] = false;
+                                       targetMonthRef.current = nextMonthIndex - 1;
+                                       console.log(`[OneScroll] Landed at month ${nextMonthIndex + 1} start. PHOTO ZONE will engage.`);
+                                    }
+                                 });
+                              }
+                           }, 50);
+                        }
+                     }
+                  } else {
+                     if (atCollageRef.current === activeMonth) atCollageRef.current = -1;
                   }
                }
 
-               if (activeMonth !== targetMonthRef.current && !isAutoScrollingRef.current && !interruptedMonthsRef.current[activeMonth]) {
-                   const lTime = tlAnim.labels[`start-${activeMonth}`];
-                   if (lTime !== undefined) {
-                      const lProg = lTime / tlAnim.duration();
-                      const startScroll = self.start + (self.end - self.start) * lProg;
-                      const isScrollingForward = activeMonth > targetMonthRef.current;
-                      const shouldTrigger = isScrollingForward 
-                         ? (currentScroll > startScroll + 20)
-                         : (self.direction < 0);
+               // --- PHOTO ZONE: Auto-scroll through photos if entering a new month ---
+               if (activeMonth !== targetMonthRef.current && !interruptedMonthsRef.current[activeMonth]) {
+                  const lTime = tlAnim.labels[`start-${activeMonth}`];
+                  if (lTime !== undefined) {
+                     const lProg = lTime / tlAnim.duration();
+                     const startScroll = self.start + (self.end - self.start) * lProg;
+                     const isGoingForward = activeMonth > targetMonthRef.current;
+                     const isGoingBackward = activeMonth < targetMonthRef.current && self.direction < 0;
+                     const shouldTrigger = isGoingForward
+                        ? currentScroll > startScroll + 20
+                        : isGoingBackward;
 
-                      if (shouldTrigger) {
-                         targetMonthRef.current = activeMonth;
-                         if (scrollIntentTimeoutRef.current) clearTimeout(scrollIntentTimeoutRef.current);
-                         scrollIntentTimeoutRef.current = setTimeout(() => {
-                            if (!isAutoScrollingRef.current && !interruptedMonthsRef.current[activeMonth]) {
-                               triggerAutoScroll(activeMonth);
-                            }
-                         }, 1000);
-                      }
-                   }
-                }
+                     if (shouldTrigger) {
+                        targetMonthRef.current = activeMonth;
+                        if (scrollIntentTimeoutRef.current) clearTimeout(scrollIntentTimeoutRef.current);
+                        scrollIntentTimeoutRef.current = setTimeout(() => {
+                           if (!isAutoScrollingRef.current) {
+                              triggerAutoScroll(activeMonth);
+                           }
+                        }, 800);
+                     }
+                  }
+               }
             }
           },
           onEnter: () => {
