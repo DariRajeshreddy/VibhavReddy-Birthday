@@ -43,7 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} ${cinzel.variable} ${cormorant.variable} ${roboto.variable} scroll-smooth`}
+      className={`${inter.variable} ${playfair.variable} ${cinzel.variable} ${cormorant.variable} ${roboto.variable}`}
     >
       <body className="antialiased selection:bg-pink-100">
         <SmoothScroll>{children}</SmoothScroll>

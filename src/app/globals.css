@@ -20,7 +20,7 @@
   }
 
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 
   body {
@@ -45,6 +45,23 @@
   }
   100% {
     transform: scale(1.1) translate(-1%, -1%);
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-130vh) rotate(10deg);
+    opacity: 0;
   }
 }
 
@@ -101,6 +118,19 @@
 
 .animate-scroll-line {
   animation: scroll-line 2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes bounceSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 1.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

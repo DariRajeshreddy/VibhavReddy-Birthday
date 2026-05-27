@@ -17,10 +17,6 @@ export default function WelcomeOverlay() {
       }
     }, 500);
 
-    // Also listen for the playing event to finally close the overlay
-    const handlePlaying = () => setIsOpen(true);
-    window.addEventListener('heroYtPlaying', handlePlaying);
-
     // Fallback if YT never fires ready
     const timer = setTimeout(() => {
       setIsReady(true);
@@ -30,15 +26,23 @@ export default function WelcomeOverlay() {
     return () => {
       clearInterval(checkInterval);
       clearTimeout(timer);
-      window.removeEventListener('heroYtPlaying', handlePlaying);
     };
   }, []);
 
-  // Prevent scrolling when overlay is active
+  // Prevent scrolling when overlay is active and disable browser scroll restoration
   useEffect(() => {
+    if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
     if (!isOpen) {
       document.body.style.overflow = "hidden";
+      // Force scrollTo(0,0) immediately and again in a short timeout to bypass browser scroll-restoration races
       window.scrollTo(0, 0);
+      const resetScrollTimeout = setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 100);
+      return () => clearTimeout(resetScrollTimeout);
     } else {
       document.body.style.overflow = "";
     }
@@ -46,17 +50,19 @@ export default function WelcomeOverlay() {
   }, [isOpen]);
 
   const handleEnter = () => {
+    if (!isReady && !isEntering) return;
+    
     // Synchronous direct call to HeroSection to preserve user gesture
     if (typeof (window as any).playHeroMusic === 'function') {
       (window as any).playHeroMusic();
     }
     
-    setIsEntering(true);
+    // Dispatch event to start the hero cinematic animation
+    (window as any).heroAnimationStarted = true;
+    window.dispatchEvent(new Event("startHeroAnimation"));
     
-    // Fallback: if YT fails to play within 5s of clicking, open it anyway
-    setTimeout(() => {
-      setIsOpen(true);
-    }, 5000);
+    // Close the overlay immediately so the cinematic sequence starts seamlessly
+    setIsOpen(true);
   };
 
   return (

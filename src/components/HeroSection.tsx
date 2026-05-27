@@ -15,6 +15,9 @@ declare global {
 }
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+if (typeof window !== 'undefined') {
+  ScrollTrigger.config({ ignoreMobileResize: true });
+}
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,21 +50,27 @@ export default function HeroSection() {
 
   const playYtWithFade = () => {
     // Only play if we are still within the Hero Section
-    const st = ScrollTrigger.getById("hero-pin");
-    if (st && !st.isActive && window.scrollY > 100) return;
+    if (typeof window !== 'undefined' && window.scrollY > window.innerHeight / 2) return;
 
-    if (ytPlayerRef.current && ytReadyRef.current) {
-      try {
-        if (ytPlayerRef.current.getPlayerState() !== 1) {
-           ytPlayerRef.current.playVideo();
+    const runPlay = () => {
+      if (ytPlayerRef.current && ytReadyRef.current) {
+        try {
+          if (ytPlayerRef.current.unMute) ytPlayerRef.current.unMute();
+          if (!isMutedRef.current) {
+            if (ytPlayerRef.current.setVolume) ytPlayerRef.current.setVolume(30);
+          }
+          if (ytPlayerRef.current.playVideo) ytPlayerRef.current.playVideo();
+        } catch (e) {
+          console.error("Hero YT play failed", e);
         }
-        ytPlayerRef.current.unMute();
-        if (!isMutedRef.current) {
-          gsap.killTweensOf(ytVolProxy.current);
-          if (ytPlayerRef.current.setVolume) ytPlayerRef.current.setVolume(30);
-        }
-      } catch (e) {}
-    }
+      }
+    };
+
+    runPlay();
+    // Multi-phase retries to cover dynamic API buffering states and browser gesture delays
+    setTimeout(runPlay, 200);
+    setTimeout(runPlay, 800);
+    setTimeout(runPlay, 1600);
   };
 
   const pauseYtWithFade = () => {
@@ -149,6 +158,13 @@ export default function HeroSection() {
   }, []);
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
     if (!containerRef.current) return;
 
     const ctx = gsap.context(() => {
@@ -163,18 +179,19 @@ export default function HeroSection() {
         stagger: { each: 0.1, from: "random" },
       });
 
-      // 2. The pinned intro timeline
+      // 1. Audio ScrollTrigger (Pauses music when scrolled past Hero)
+      ScrollTrigger.create({
+        trigger: containerRef.current,
+        start: "top top",
+        end: "+=100%", 
+        onLeave: pauseYtWithFade,
+        onEnterBack: playYtWithFade,
+      });
+
+      // 2. Automatic intro timeline
       const tl = gsap.timeline({
-        scrollTrigger: {
-          id: "hero-pin",
-          trigger: containerRef.current,
-          start: "top top",
-          end: "+=1500",
-          pin: true,
-          scrub: true, // Use instant scrub to remove delay/lag
-          onLeave: pauseYtWithFade,
-          onEnterBack: playYtWithFade,
-        }
+        paused: true,
+        delay: 0.5
       });
 
       tl
@@ -189,12 +206,47 @@ export default function HeroSection() {
         // Final Title Reveal
         .fromTo(".main-title", { opacity: 0, scale: 0.5, filter: "blur(20px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 2 })
         .fromTo(".number-1", { opacity: 0, y: 100, rotationX: 90 }, { opacity: 1, y: 0, rotationX: 0, duration: 2 }, "-=1.5")
-        .fromTo(".continue-btn", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1 }, "-=1")
-        .fromTo(".scroll-indicator", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1 }, "-=0.5")
+        // Automatically start the journey 2.5 seconds after title reveal
+        .add(() => startJourney(), "+=2.5");
 
-        // Final fade out of the whole section
-        .to(".hero-content", { opacity: 0, y: -100, duration: 3, ease: "power2.in" }, "+=2");
+      // 3. Floating Balloons Animation using GSAP
+      gsap.utils.toArray(".balloon").forEach((balloon: any) => {
+        const dur = parseFloat(balloon.getAttribute("data-duration") || "15");
+        const delay = parseFloat(balloon.getAttribute("data-delay") || "0");
+        
+        gsap.fromTo(balloon,
+          { y: "0vh", rotation: 0, opacity: 0 },
+          {
+            y: "-135vh",
+            rotation: () => Math.random() * 30 - 15,
+            opacity: 0.65,
+            duration: dur,
+            delay: delay,
+            repeat: -1,
+            ease: "none",
+            onRepeat: () => {
+              // Randomize left position on every loop to look organic!
+              gsap.set(balloon, { left: `${Math.random() * 85 + 5}%` });
+            }
+          }
+        );
+      });
 
+      // Listen for the start event from WelcomeOverlay
+      const handleStart = () => {
+        tl.play();
+      };
+      
+      window.addEventListener("startHeroAnimation", handleStart);
+      
+      // Fallback if it was already triggered before this component mounted
+      if ((window as any).heroAnimationStarted) {
+        tl.play();
+      }
+
+      return () => {
+        window.removeEventListener("startHeroAnimation", handleStart);
+      };
     }, containerRef);
 
     return () => ctx.revert();
@@ -202,13 +254,40 @@ export default function HeroSection() {
 
   const startJourney = () => {
     playYtWithFade();
-    // Smooth scroll to finish the intro and move to next section
-    // 1500 (pin distance) + viewport height + small buffer
-    gsap.to(window, {
-      scrollTo: 1500 + window.innerHeight + 50,
-      duration: 2,
-      ease: "power2.inOut"
-    });
+    document.body.style.overflow = ''; // Unlock scroll
+    // Smooth scroll to next section using Lenis or native fallback
+    if ((window as any).lenis) {
+      try {
+        (window as any).lenis.scrollTo(window.innerHeight, {
+          duration: 1.5,
+          easing: (t: number) => t * (2 - t), // power2.out equivalent
+          force: true,
+          onComplete: () => {
+            window.dispatchEvent(new Event("startMonthAutoScroll"));
+          }
+        });
+      } catch (e) {
+        console.error("Lenis scrollTo failed in HeroSection, using native fallback", e);
+        fallbackToNative();
+      }
+    } else {
+      fallbackToNative();
+    }
+
+    function fallbackToNative() {
+      const scrollProxy = { y: window.scrollY };
+      gsap.to(scrollProxy, {
+        y: window.innerHeight,
+        duration: 1.5,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          window.scrollTo(0, scrollProxy.y);
+        },
+        onComplete: () => {
+          window.dispatchEvent(new Event("startMonthAutoScroll"));
+        }
+      });
+    }
   };
 
   return (
@@ -216,19 +295,6 @@ export default function HeroSection() {
       <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none w-[200px] h-[200px] overflow-hidden">
         <div ref={ytContainerRef} />
       </div>
-      {/* Scroll Hint Note */}
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1, duration: 1 }}
-        className="absolute top-8 left-8 z-[100] max-w-[220px]"
-      >
-        <div className="bg-slate-900/40 border border-amber-200/20 px-4 py-2.5 rounded-xl backdrop-blur-md shadow-2xl transition-all hover:border-amber-200/50 hover:bg-slate-900/60">
-          <p className="text-amber-100/80 font-serif text-sm leading-snug italic">
-            ✨ Scroll down for Vibhav's photo gallery
-          </p>
-        </div>
-      </motion.div>
 
       {/* Mute/Unmute Button */}
       <button
@@ -282,23 +348,8 @@ export default function HeroSection() {
             1
             <div className="absolute inset-0 blur-3xl bg-white/20 rounded-full -z-10 mix-blend-screen" />
           </div>
-
-          <button
-            onClick={startJourney}
-            className="continue-btn mt-12 px-10 py-5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium tracking-[0.3em] uppercase text-sm hover:bg-white/20 transition-all hover:scale-105 active:scale-95 opacity-0 relative overflow-hidden group"
-          >
-            <span className="relative z-10">Start the Journey</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-          </button>
         </div>
 
-        {/* Minimalist Scroll Indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50 opacity-0 scroll-indicator">
-          <span className="text-[10px] tracking-[0.6em] text-white/40 uppercase font-light">Scroll</span>
-          <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full bg-white/80 -translate-y-full animate-scroll-line" />
-          </div>
-        </div>
       </div>
       {/* Floating Balloons */}
       <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
@@ -315,10 +366,10 @@ export default function HeroSection() {
           <div
             key={i}
             className={`balloon absolute bottom-[-20%] ${balloon.size} ${balloon.color} rounded-[50%_50%_50%_50%/60%_60%_40%_40%] shadow-[inset_-10px_-10px_20px_rgba(0,0,0,0.1),0_10px_20px_rgba(0,0,0,0.1)]`}
+            data-duration={balloon.duration}
+            data-delay={balloon.delay}
             style={{
               left: balloon.left,
-              animation: `floatUp ${balloon.duration}s linear infinite`,
-              animationDelay: `${balloon.delay}s`
             }}
           >
             {/* Balloon String */}
@@ -328,32 +379,6 @@ export default function HeroSection() {
           </div>
         ))}
       </div>
-
-      <style jsx global>{`
-        @keyframes scroll-line {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(100%); }
-        }
-        .animate-scroll-line {
-          animation: scroll-line 2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-        }
-        @keyframes floatUp {
-          0% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 0.6;
-          }
-          90% {
-            opacity: 0.6;
-          }
-          100% {
-            transform: translateY(-120vh) rotate(10deg);
-            opacity: 0;
-          }
-        }
-      `}</style>
     </section>
   );
 }

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { motion } from "framer-motion";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 declare global {
@@ -13,7 +14,10 @@ declare global {
   }
 }
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+if (typeof window !== 'undefined') {
+  ScrollTrigger.config({ ignoreMobileResize: true });
+}
 
 const monthsData = [
   {
@@ -207,14 +211,217 @@ export default function MonthJourney() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const musicTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isAutoScrollingRef = useRef(false);
+  const targetMonthRef = useRef(0);
+  const interruptedMonthsRef = useRef<{ [key: number]: boolean }>({});
+  const manualScrollCooldownsRef = useRef<{ [key: number]: NodeJS.Timeout }>({});
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
+  const stRef = useRef<ScrollTrigger | null>(null);
+  const scrollIntentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const killActiveScrollRef = useRef<(() => void) | null>(null);
+  const idleTransitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startIdleTransitionTimer = (currentIndex: number) => {
+    if (idleTransitionTimeoutRef.current) clearTimeout(idleTransitionTimeoutRef.current);
+    
+    if (currentIndex < monthsData.length - 1) {
+      console.log(`[IdleTransition] Starting 10s idle timer for month ${currentIndex + 1}`);
+      idleTransitionTimeoutRef.current = setTimeout(() => {
+        if (!isAutoScrollingRef.current) {
+          const nextMonthIndex = currentIndex + 1;
+          console.log("[IdleTransition] 10s idle elapsed. Auto-scrolling to next month:", nextMonthIndex);
+          interruptedMonthsRef.current[nextMonthIndex] = false;
+          targetMonthRef.current = nextMonthIndex;
+          triggerAutoScroll(nextMonthIndex);
+        }
+      }, 10000);
+    }
+  };
+
+  const clearIdleTransitionTimer = () => {
+    if (idleTransitionTimeoutRef.current) {
+      console.log("[IdleTransition] User activity detected. Clearing 10s idle timer.");
+      clearTimeout(idleTransitionTimeoutRef.current);
+      idleTransitionTimeoutRef.current = null;
+    }
+  };
+
+  const triggerManualScrollCooldown = (monthIndex: number) => {
+    interruptedMonthsRef.current[monthIndex] = true;
+    if (manualScrollCooldownsRef.current[monthIndex]) {
+      clearTimeout(manualScrollCooldownsRef.current[monthIndex]);
+    }
+    manualScrollCooldownsRef.current[monthIndex] = setTimeout(() => {
+      console.log(`[ManualCooldown] Cooldown ended for month ${monthIndex + 1}. Re-enabling auto-scroll.`);
+      interruptedMonthsRef.current[monthIndex] = false;
+    }, 3000);
+  };
+
+  const triggerAutoScroll = (targetIndex: number) => {
+    if (isAutoScrollingRef.current) {
+      console.log("[AutoScroll] Already active, ignoring request for index:", targetIndex);
+      return;
+    }
+
+    const st = stRef.current || ScrollTrigger.getById("journey-pin");
+    const tl = tlRef.current;
+    if (!st || !tl) {
+      console.warn("[AutoScroll] st or tl not initialized yet. st:", st, "tl:", tl);
+      return;
+    }
+    
+    // Scroll all the way to the end of the month's timeline to show the built-in hint
+    const label = `end-${targetIndex}`;
+    const labelTime = tl.labels[label];
+    
+    if (labelTime === undefined) {
+      console.warn("[AutoScroll] Label not found:", label);
+      return;
+    }
+    
+    const progress = labelTime / tl.duration();
+    const targetScroll = Math.round(st.start + (st.end - st.start) * progress);
+    
+    console.log("[AutoScroll] Calculations:", {
+      targetIndex,
+      label,
+      labelTime,
+      duration: tl.duration(),
+      progress,
+      stStart: st.start,
+      stEnd: st.end,
+      targetScroll,
+      currentScroll: window.scrollY
+    });
+    
+    if (targetScroll && window.scrollY < targetScroll - 20) {
+      isAutoScrollingRef.current = true;
+      
+      const dist = targetScroll - window.scrollY;
+      const dur = Math.max(2, dist / 100); // Cinematic 100px per sec
+      
+      console.log(`[AutoScroll] Starting proxy scroll. Target: ${targetScroll}, Duration: ${dur}s`);
+
+      // 1. Temporarily pause Lenis so it does not intercept our native window.scrollTo updates
+      if ((window as any).lenis) {
+        try { (window as any).lenis.stop(); } catch (e) {}
+      }
+
+      // Kill any currently active scroll and listeners first
+      if (killActiveScrollRef.current) {
+        killActiveScrollRef.current();
+      }
+
+      const safetyTimeout = setTimeout(() => {
+        if (isAutoScrollingRef.current) {
+          console.log("[AutoScroll] Safety timeout triggered. Resetting scroll lock.");
+          isAutoScrollingRef.current = false;
+          removeInteractionListeners();
+        }
+      }, (dur + 4) * 1000); // 4 seconds padding to cover the bounce animation
+      
+      const scrollProxy = { y: window.scrollY };
+      let activeTween: gsap.core.Tween | gsap.core.Timeline | null = null;
+      
+      const tween = gsap.to(scrollProxy, {
+        y: targetScroll,
+        duration: dur,
+        ease: "none",
+        onUpdate: () => {
+          window.scrollTo(0, scrollProxy.y);
+        },
+        onComplete: () => {
+          console.log("[AutoScroll] Proxy scroll complete. Triggering physical screen container bounce.");
+          clearTimeout(safetyTimeout);
+          
+          if (containerRef.current) {
+            const bounceTimeline = gsap.timeline({
+              onComplete: () => {
+                isAutoScrollingRef.current = false;
+                removeInteractionListeners();
+                startIdleTransitionTimer(targetIndex);
+              }
+            });
+            
+            activeTween = bounceTimeline;
+
+            bounceTimeline
+              .to(containerRef.current, {
+                y: -45,
+                duration: 0.35,
+                ease: "power1.out"
+              })
+              .to(containerRef.current, {
+                y: 0,
+                duration: 0.65,
+                ease: "bounce.out"
+              });
+          } else {
+            isAutoScrollingRef.current = false;
+            removeInteractionListeners();
+          }
+        }
+      });
+
+      activeTween = tween;
+
+      const killScroll = () => {
+        console.log("[AutoScroll] Scroll stopped by user interaction.");
+        clearIdleTransitionTimer();
+        triggerManualScrollCooldown(targetIndex);
+        if (activeTween) {
+          activeTween.kill();
+        }
+        isAutoScrollingRef.current = false;
+        clearTimeout(safetyTimeout);
+        removeInteractionListeners();
+      };
+
+      const interactionEvents = ["wheel", "touchmove", "pointerdown"];
+      let listenersAdded = false;
+      const addListenersTimeout = setTimeout(() => {
+        interactionEvents.forEach(event => {
+          window.addEventListener(event, killScroll, { passive: true });
+        });
+        listenersAdded = true;
+      }, 500);
+
+      const removeInteractionListeners = () => {
+        clearTimeout(addListenersTimeout);
+        interactionEvents.forEach(event => {
+          window.removeEventListener(event, killScroll);
+        });
+        killActiveScrollRef.current = null;
+        // Resume Lenis smooth scroll engine
+        if ((window as any).lenis) {
+          try { (window as any).lenis.start(); } catch (e) {}
+        }
+      };
+
+      killActiveScrollRef.current = killScroll;
+
+    } else {
+      console.log("[AutoScroll] Target scroll already reached or invalid. scrollY:", window.scrollY, "targetScroll:", targetScroll);
+    }
+  };
+
+  useEffect(() => {
+    // Only used as a fallback if the user triggers the event manually via console or if onEnter fails
+    const handleStartAutoScroll = () => {
+       targetMonthRef.current = 0;
+       // Added a 1.5s delay to sync with the Hero transition in case this fires simultaneously
+       setTimeout(() => triggerAutoScroll(0), 1500);
+    };
+    window.addEventListener("startMonthAutoScroll", handleStartAutoScroll);
+    return () => window.removeEventListener("startMonthAutoScroll", handleStartAutoScroll);
+  }, []);
+
   const getYoutubeId = (url: string) => {
     if (!url) return null;
     const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[1].length === 11) ? match[1] : null;
   };
-
-  const isYoutube = getYoutubeId(currentBgm) !== null;
 
   useEffect(() => {
     // Load YouTube IFrame API
@@ -309,31 +516,19 @@ export default function MonthJourney() {
         }
       }
     } else {
-      // Transition to Audio
+      // Transition to local HTML5 Audio
       if (ytPlayerRef.current?.pauseVideo && ytReadyRef.current) {
-        try {
-          ytPlayerRef.current.pauseVideo();
-        } catch (e) { }
+        try { ytPlayerRef.current.pauseVideo(); } catch (e) { }
       }
       if (audioEl) {
-        if (audioEl.src !== nextBgm) {
+        try {
           audioEl.src = nextBgm;
-          audioEl.volume = 0;
-        }
-
-        const playPromise = audioEl.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            gsap.killTweensOf(audioEl);
-            gsap.to(audioEl, {
-              volume: isMutedRef.current ? 0 : 0.3,
-              duration: 3
-            });
-          }).catch(error => {
-            if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
-              console.warn("Audio play interrupted:", error);
-            }
-          });
+          audioEl.load();
+          audioEl.play().catch(e => console.log("Audio play blocked by browser gesture policy. Will retry on user gesture.", e));
+          gsap.killTweensOf(audioEl);
+          audioEl.volume = isMutedRef.current ? 0 : 0.3;
+        } catch (e) {
+          console.error("Local audio transition failed", e);
         }
       }
     }
@@ -379,12 +574,31 @@ export default function MonthJourney() {
           end: "+=60000",
           onUpdate: (self) => {
             const numMonths = monthsData.length;
-            // Add a small offset (0.15) so the song triggers slightly earlier during the transition,
-            // rather than waiting for the entire first image to finish animating.
-            const currentIndex = Math.min(
-              numMonths - 1,
-              Math.max(0, Math.floor((self.progress * numMonths) + 0.15))
-            );
+            const tlAnim = tlRef.current;
+            const currentScroll = window.scrollY;
+            let currentIndex = currentMonthRef.current;
+            if (!isAutoScrollingRef.current) {
+              clearIdleTransitionTimer();
+              triggerManualScrollCooldown(currentIndex);
+            }
+            
+            if (tlAnim) {
+              for (let i = 0; i < numMonths; i++) {
+                const lTime = tlAnim.labels[`start-${i}`];
+                if (lTime !== undefined) {
+                  const lProg = lTime / tlAnim.duration();
+                  const startScroll = self.start + (self.end - self.start) * lProg;
+                  if (currentScroll >= startScroll - 50) {
+                    currentIndex = i;
+                  }
+                }
+              }
+            } else {
+              currentIndex = Math.min(
+                numMonths - 1,
+                Math.max(0, Math.floor(self.progress * numMonths))
+              );
+            }
 
             // Auto-unmute when transitioning to a new month to showcase unique BGMs
             if (currentIndex !== currentMonthRef.current) {
@@ -404,9 +618,75 @@ export default function MonthJourney() {
                 syncMusic(nextBgm);
               }, 1000);
             }
+
+            // Auto-scroll logic Check
+            if (tlAnim) {
+               let activeMonth = 0;
+               for (let i = 0; i < numMonths; i++) {
+                  const lTime = tlAnim.labels[`start-${i}`];
+                  if (lTime !== undefined) {
+                     const lProg = lTime / tlAnim.duration();
+                     const startScroll = self.start + (self.end - self.start) * lProg;
+                     if (currentScroll >= startScroll - 50) {
+                        activeMonth = i;
+                      }
+                   }
+                }
+
+               for (let m = activeMonth; m < numMonths; m++) {
+                   interruptedMonthsRef.current[m] = false;
+                }
+
+               // One Scroll to Next Month Logic
+               // If they scroll down (direction > 0) while looking at the collage, trigger next month auto-scroll
+               const collageTime = tlAnim.labels[`collage-${activeMonth}`];
+               const endTime = tlAnim.labels[`end-${activeMonth}`];
+               if (collageTime !== undefined && endTime !== undefined) {
+                  const collageProg = collageTime / tlAnim.duration();
+                  const endProg = endTime / tlAnim.duration();
+                  const collageScroll = self.start + (self.end - self.start) * collageProg;
+                  const endScroll = self.start + (self.end - self.start) * endProg;
+                  
+                  if (currentScroll >= collageScroll - 100 && currentScroll < endScroll - 20 && self.direction > 0) {
+                     const nextMonthIndex = activeMonth + 1;
+                     if (nextMonthIndex < numMonths && !isAutoScrollingRef.current) {
+                        console.log("[OneScroll] Triggering cinematic scroll to next month:", nextMonthIndex);
+                        interruptedMonthsRef.current[nextMonthIndex] = false;
+                        targetMonthRef.current = nextMonthIndex;
+                        triggerAutoScroll(nextMonthIndex);
+                     }
+                  }
+               }
+
+               if (activeMonth !== targetMonthRef.current && !isAutoScrollingRef.current && !interruptedMonthsRef.current[activeMonth]) {
+                   const lTime = tlAnim.labels[`start-${activeMonth}`];
+                   if (lTime !== undefined) {
+                      const lProg = lTime / tlAnim.duration();
+                      const startScroll = self.start + (self.end - self.start) * lProg;
+                      const isScrollingForward = activeMonth > targetMonthRef.current;
+                      const shouldTrigger = isScrollingForward 
+                         ? (currentScroll > startScroll + 20)
+                         : (self.direction < 0);
+
+                      if (shouldTrigger) {
+                         targetMonthRef.current = activeMonth;
+                         if (scrollIntentTimeoutRef.current) clearTimeout(scrollIntentTimeoutRef.current);
+                         scrollIntentTimeoutRef.current = setTimeout(() => {
+                            if (!isAutoScrollingRef.current && !interruptedMonthsRef.current[activeMonth]) {
+                               triggerAutoScroll(activeMonth);
+                            }
+                         }, 1000);
+                      }
+                   }
+                }
+            }
           },
           onEnter: () => {
             syncMusic(currentBgmRef.current);
+            if (targetMonthRef.current === 0 && !isAutoScrollingRef.current) {
+               // Wait 1.5s for HeroSection's scroll transition to fully complete!
+               setTimeout(() => triggerAutoScroll(0), 1500);
+            }
           },
           onLeave: () => {
             if (ytPlayerRef.current?.pauseVideo && ytReadyRef.current) {
@@ -425,8 +705,12 @@ export default function MonthJourney() {
           }
         }
       });
+      
+      tlRef.current = tl;
+      stRef.current = ScrollTrigger.getById("journey-pin") || tl.scrollTrigger || null;
 
       sections.forEach((section, index) => {
+        tl.add(`start-${index}`);
         // Entrance animation for the month panel
         if (index === 0) {
           tl.to(section, { autoAlpha: 1, duration: 1 });
@@ -536,10 +820,21 @@ export default function MonthJourney() {
             { autoAlpha: 1, y: 0, duration: 2 },
             `${collageLabel}+=1`
           );
+          
+          // Physically bounce the entire screen container up and down to guide the user!
+          tl.add(() => {
+            if (containerRef.current) {
+              gsap.timeline()
+                .to(containerRef.current, { y: -45, duration: 0.35, ease: "power1.out" })
+                .to(containerRef.current, { y: 0, duration: 0.65, ease: "bounce.out" });
+            }
+          }, `${collageLabel}+=3`);
         }
 
         // Add a long pause at the end of the month before transitioning
         tl.to({}, { duration: 5 });
+
+        tl.add(`end-${index}`);
 
         // Fade everything out before next month slides in (if not the last month)
         if (index < sections.length - 1) {
@@ -680,9 +975,11 @@ export default function MonthJourney() {
           </div>
 
           <div className="next-month-text absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50 opacity-0 pointer-events-none">
-            <span className="text-[10px] tracking-[0.6em] text-white/40 uppercase font-roboto font-light">Scroll</span>
-            <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-full bg-white/80 -translate-y-full animate-scroll-line" />
+            <div className="flex flex-col items-center gap-2 animate-bounce-slow">
+              <span className="text-[10px] tracking-[0.6em] text-white/40 uppercase font-roboto font-light">Scroll</span>
+              <div className="w-px h-12 bg-gradient-to-b from-white/40 to-transparent relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full bg-white/80 -translate-y-full animate-scroll-line" />
+              </div>
             </div>
           </div>
 
@@ -709,3 +1006,7 @@ export default function MonthJourney() {
     </div>
   );
 }
+
+
+
+

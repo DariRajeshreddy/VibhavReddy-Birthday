@@ -8,11 +8,75 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function EmotionalSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isAutoScrollingRef = useRef(false);
+  const activeTweenRef = useRef<gsap.core.Tween | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     const ctx = gsap.context(() => {
+      let triggerInstance: ScrollTrigger | null = null;
+
+      const triggerAutoScroll = () => {
+        if (isAutoScrollingRef.current) return;
+        isAutoScrollingRef.current = true;
+
+        if (!triggerInstance) return;
+        const startPos = triggerInstance.start;
+        const endPos = triggerInstance.end;
+        const currentY = window.scrollY;
+
+        // Only trigger if they are at or near the start of the pinned section
+        if (currentY >= startPos - 100 && currentY < endPos - 100) {
+          console.log("[EmotionalSection] Starting automatic quote scroll...");
+          
+          if ((window as any).lenis) {
+            try { (window as any).lenis.stop(); } catch (e) {}
+          }
+
+          const scrollProxy = { y: window.scrollY };
+          
+          activeTweenRef.current = gsap.to(scrollProxy, {
+            y: endPos,
+            duration: 12,
+            ease: "none",
+            onUpdate: () => {
+              window.scrollTo(0, scrollProxy.y);
+            },
+            onComplete: () => {
+              isAutoScrollingRef.current = false;
+              removeListeners();
+            }
+          });
+        }
+      };
+
+      const killScroll = () => {
+        if (activeTweenRef.current) {
+          activeTweenRef.current.kill();
+          activeTweenRef.current = null;
+        }
+        isAutoScrollingRef.current = false;
+        if ((window as any).lenis) {
+          try { (window as any).lenis.start(); } catch (e) {}
+        }
+        removeListeners();
+      };
+
+      const interactionEvents = ["wheel", "touchmove", "pointerdown"];
+      
+      const removeListeners = () => {
+        interactionEvents.forEach(event => {
+          window.removeEventListener(event, killScroll);
+        });
+      };
+
+      const addListeners = () => {
+        interactionEvents.forEach(event => {
+          window.addEventListener(event, killScroll, { passive: true });
+        });
+      };
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
@@ -20,6 +84,14 @@ export default function EmotionalSection() {
           end: "+=2000",
           scrub: 1,
           pin: true,
+          onEnter: (self) => {
+            triggerInstance = self;
+            // Delay by 1.5s so the enter transition settles
+            setTimeout(() => {
+              addListeners();
+              triggerAutoScroll();
+            }, 1500);
+          }
         }
       });
 
@@ -32,11 +104,14 @@ export default function EmotionalSection() {
         .to(".bg-img-3", { opacity: 1, duration: 1 }, "<")
         .fromTo(".text-3", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 2 })
         .to(".text-3", { opacity: 0, scale: 1.1, duration: 1 })
-        .to(".bg-overlay", { opacity: 1, duration: 1 }); // Fade to full black/dark before next section
+        .to(".bg-overlay", { opacity: 1, duration: 1 });
 
     }, containerRef);
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      if (activeTweenRef.current) activeTweenRef.current.kill();
+    };
   }, []);
 
   return (
