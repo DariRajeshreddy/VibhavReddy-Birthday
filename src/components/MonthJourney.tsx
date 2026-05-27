@@ -647,7 +647,7 @@ export default function MonthJourney() {
                   const collageScroll = self.start + (self.end - self.start) * collageProg;
                   const endScroll = self.start + (self.end - self.start) * endProg;
                   
-                  if (currentScroll >= collageScroll - 100 && currentScroll < endScroll - 20 && self.direction > 0) {
+                  if (currentScroll >= collageScroll - 100 && currentScroll <= endScroll + 300 && self.direction > 0) {
                      const nextMonthIndex = activeMonth + 1;
                      if (nextMonthIndex < numMonths && !isAutoScrollingRef.current) {
                         console.log("[OneScroll] Triggering cinematic scroll to next month:", nextMonthIndex);
