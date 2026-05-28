@@ -164,6 +164,26 @@ export default function HeroSection() {
     };
   }, []);
 
+  // Pause Hero music on screen lock / tab switch, resume on return
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!ytPlayerRef.current || !ytReadyRef.current) return;
+      if (document.hidden) {
+        // Screen locked or tab switched — pause
+        try { ytPlayerRef.current.pauseVideo(); } catch (e) {}
+        console.log("[Hero Visibility] Screen hidden — music paused.");
+      } else {
+        // Screen visible again — resume only if not muted and still in hero view
+        if (!isMutedRef.current && window.scrollY < window.innerHeight) {
+          try { ytPlayerRef.current.playVideo(); } catch (e) {}
+          console.log("[Hero Visibility] Screen visible — music resumed.");
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current) return;
 

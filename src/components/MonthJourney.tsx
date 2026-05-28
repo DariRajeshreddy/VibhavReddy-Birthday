@@ -428,6 +428,33 @@ export default function MonthJourney() {
     return () => window.removeEventListener("startMonthAutoScroll", handleStartAutoScroll);
   }, []);
 
+  // Pause music when screen locks / tab hides, resume when user returns
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Screen locked or tab switched — pause everything
+        if (ytPlayerRef.current?.pauseVideo && ytReadyRef.current) {
+          try { ytPlayerRef.current.pauseVideo(); } catch (e) {}
+        }
+        if (audioRef.current) audioRef.current.pause();
+        console.log("[Visibility] Screen hidden — music paused.");
+      } else {
+        // Screen unlocked / tab back in focus — resume if not muted
+        if (!isMutedRef.current) {
+          if (ytPlayerRef.current?.playVideo && ytReadyRef.current) {
+            try { ytPlayerRef.current.playVideo(); } catch (e) {}
+          }
+          if (audioRef.current && audioRef.current.src) {
+            audioRef.current.play().catch(() => {});
+          }
+          console.log("[Visibility] Screen visible — music resumed.");
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
   const getYoutubeId = (url: string) => {
     if (!url) return null;
     const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
@@ -535,6 +562,7 @@ export default function MonthJourney() {
       if (audioEl) {
         try {
           audioEl.src = nextBgm;
+          audioEl.loop = true;
           audioEl.load();
           audioEl.play().catch(e => console.log("Audio play blocked by browser gesture policy. Will retry on user gesture.", e));
           gsap.killTweensOf(audioEl);
