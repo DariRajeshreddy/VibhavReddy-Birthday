@@ -491,12 +491,18 @@ export default function MonthJourney() {
           onReady: (event: any) => {
             ytReadyRef.current = true;
             event.target.setLoop(true);
-            // Silent pre-buffering handled by autoplay:1 and mute:1
-            // syncMusic(onEnter) will unmute it instantly when user scrolls here.
           },
           onStateChange: (event: any) => {
+            // State 0 = ended → restart for loop
             if (event.data === 0) {
-              event.target.playVideo();
+              try {
+                event.target.seekTo(0, true);
+                event.target.playVideo();
+              } catch (e) {}
+            }
+            // State 1 = playing → reinforce loop flag
+            if (event.data === 1) {
+              try { event.target.setLoop(true); } catch (e) {}
             }
           }
         }
@@ -540,12 +546,18 @@ export default function MonthJourney() {
           }
           ytPlayerRef.current.loadVideoById({
             videoId: nextYtId,
-            playlist: nextYtId,
+            startSeconds: 0,
             suggestedQuality: 'small'
           });
-          ytPlayerRef.current.setLoop(true);
+          // setLoop must be called after the video is loaded, not synchronously.
+          // We reinforce it both here and in onStateChange(1) for reliability.
+          setTimeout(() => {
+            try {
+              ytPlayerRef.current?.setLoop(true);
+              ytPlayerRef.current?.playVideo();
+            } catch (e) {}
+          }, 500);
           ytPlayerRef.current.unMute();
-          ytPlayerRef.current.playVideo();
           gsap.killTweensOf(ytVolProxy.current);
           if (!isMutedRef.current) {
              ytPlayerRef.current.setVolume(30);
