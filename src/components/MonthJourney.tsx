@@ -504,6 +504,15 @@ export default function MonthJourney() {
                 event.target.playVideo();
               } catch (e) {}
             }
+            // State -1 = unstarted (some browsers skip state 0) → restart
+            if (event.data === -1) {
+              try {
+                if (event.target.getDuration && event.target.getDuration() > 0) {
+                  event.target.seekTo(0, true);
+                  event.target.playVideo();
+                }
+              } catch (e) {}
+            }
             // State 1 = playing → reinforce loop flag
             if (event.data === 1) {
               try { event.target.setLoop(true); } catch (e) {}
@@ -548,24 +557,21 @@ export default function MonthJourney() {
             if (!isMutedRef.current) ytPlayerRef.current.setVolume(30);
             return;
           }
-          ytPlayerRef.current.loadVideoById({
-            videoId: nextYtId,
-            startSeconds: 0,
-            suggestedQuality: 'small'
-          });
-          // setLoop must be called after the video is loaded, not synchronously.
-          // We reinforce it both here and in onStateChange(1) for reliability.
-          setTimeout(() => {
-            try {
-              ytPlayerRef.current?.setLoop(true);
-              ytPlayerRef.current?.playVideo();
-            } catch (e) {}
-          }, 500);
+          // Use loadPlaylist with a single-video array — this puts the player in
+          // true playlist mode so setLoop(true) actually works (unlike loadVideoById).
+          ytPlayerRef.current.loadPlaylist([nextYtId]);
           ytPlayerRef.current.unMute();
           gsap.killTweensOf(ytVolProxy.current);
           if (!isMutedRef.current) {
              ytPlayerRef.current.setVolume(30);
           }
+          // setLoop after a short delay to ensure playlist mode is active
+          setTimeout(() => {
+            try {
+              ytPlayerRef.current?.setLoop(true);
+              ytPlayerRef.current?.playVideo();
+            } catch (e) {}
+          }, 300);
         } catch (e) {
           console.error("YT transition failed", e);
         }
