@@ -41,7 +41,7 @@ const monthsData = [
     title: "My Furry Friends",
     bg: "from-indigo-900 to-purple-900",
     accent: "text-purple-200",
-    bgm: "https://music.youtube.com/watch?v=15cl2BjUNKk&si=Xw31cED63L3lc_Jq",
+    bgm: "https://music.youtube.com/watch?v=xrvpHNIWXhk&si=eFbxXeZaqLuarVNf",
     bgImage: "/images/months/month2/1.webp",
     mainPhoto: "/images/months/month2/1.webp",
     photos: [
