@@ -57,7 +57,7 @@ export default function HeroSection() {
         try {
           if (ytPlayerRef.current.unMute) ytPlayerRef.current.unMute();
           if (!isMutedRef.current) {
-            if (ytPlayerRef.current.setVolume) ytPlayerRef.current.setVolume(30);
+            if (ytPlayerRef.current.setVolume) ytPlayerRef.current.setVolume(80);
           }
           if (ytPlayerRef.current.playVideo) ytPlayerRef.current.playVideo();
         } catch (e) {
@@ -77,8 +77,8 @@ export default function HeroSection() {
     if (ytPlayerRef.current && ytReadyRef.current) {
       try {
         gsap.killTweensOf(ytVolProxy.current);
-        let currentVol = 30;
-        try { currentVol = ytPlayerRef.current.getVolume() || 30; } catch(e) {}
+        let currentVol = 80;
+        try { currentVol = ytPlayerRef.current.getVolume() || 80; } catch(e) {}
         ytVolProxy.current.vol = currentVol;
         gsap.to(ytVolProxy.current, {
           vol: 0, duration: 1,

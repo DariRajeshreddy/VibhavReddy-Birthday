@@ -45,7 +45,7 @@ export default function FamilySection() {
         events: {
           onReady: (event: any) => {
             ytReadyRef.current = true;
-            event.target.setVolume(30);
+            event.target.setVolume(80);
             event.target.setLoop(true);
             
             // Auto-play if GSAP already told us to play but we weren't ready

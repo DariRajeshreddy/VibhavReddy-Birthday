@@ -554,7 +554,7 @@ export default function MonthJourney() {
             if (ytPlayerRef.current.getPlayerState() !== 1) {
               ytPlayerRef.current.playVideo();
             }
-            if (!isMutedRef.current) ytPlayerRef.current.setVolume(30);
+            if (!isMutedRef.current) ytPlayerRef.current.setVolume(80);
             return;
           }
           // Use loadPlaylist with a single-video array — this puts the player in
@@ -563,7 +563,7 @@ export default function MonthJourney() {
           ytPlayerRef.current.unMute();
           gsap.killTweensOf(ytVolProxy.current);
           if (!isMutedRef.current) {
-             ytPlayerRef.current.setVolume(30);
+             ytPlayerRef.current.setVolume(80);
           }
           // setLoop after a short delay to ensure playlist mode is active
           setTimeout(() => {
@@ -588,7 +588,7 @@ export default function MonthJourney() {
           audioEl.load();
           audioEl.play().catch(e => console.log("Audio play blocked by browser gesture policy. Will retry on user gesture.", e));
           gsap.killTweensOf(audioEl);
-          audioEl.volume = isMutedRef.current ? 0 : 0.3;
+          audioEl.volume = isMutedRef.current ? 0 : 0.8;
         } catch (e) {
           console.error("Local audio transition failed", e);
         }
@@ -609,8 +609,8 @@ export default function MonthJourney() {
       if (ytPlayerRef.current?.setVolume && ytReadyRef.current) ytPlayerRef.current.setVolume(0);
       if (audioRef.current) audioRef.current.volume = 0;
     } else {
-      if (ytPlayerRef.current?.setVolume && ytReadyRef.current) ytPlayerRef.current.setVolume(30);
-      if (audioRef.current) audioRef.current.volume = 0.3;
+      if (ytPlayerRef.current?.setVolume && ytReadyRef.current) ytPlayerRef.current.setVolume(80);
+      if (audioRef.current) audioRef.current.volume = 0.8;
 
       // Force play if user explicitly unmuted
       syncMusic(currentBgmRef.current);
