@@ -226,22 +226,22 @@ export default function MonthJourney() {
     if (idleTransitionTimeoutRef.current) clearTimeout(idleTransitionTimeoutRef.current);
     
     if (currentIndex < monthsData.length - 1) {
-      console.log(`[IdleTransition] Starting 10s idle timer for month ${currentIndex + 1}`);
+      console.log(`[IdleTransition] Starting 5s idle timer for month ${currentIndex + 1}`);
       idleTransitionTimeoutRef.current = setTimeout(() => {
         if (!isAutoScrollingRef.current) {
           const nextMonthIndex = currentIndex + 1;
-          console.log("[IdleTransition] 10s idle elapsed. Auto-scrolling to next month:", nextMonthIndex);
+          console.log("[IdleTransition] 5s idle elapsed. Auto-scrolling to next month:", nextMonthIndex);
           interruptedMonthsRef.current[nextMonthIndex] = false;
           targetMonthRef.current = nextMonthIndex;
           triggerAutoScroll(nextMonthIndex);
         }
-      }, 10000);
+      }, 5000);
     }
   };
 
   const clearIdleTransitionTimer = () => {
     if (idleTransitionTimeoutRef.current) {
-      console.log("[IdleTransition] User activity detected. Clearing 10s idle timer.");
+      console.log("[IdleTransition] User activity detected. Clearing 5s idle timer.");
       clearTimeout(idleTransitionTimeoutRef.current);
       idleTransitionTimeoutRef.current = null;
     }
@@ -289,7 +289,7 @@ export default function MonthJourney() {
       isAutoScrollingRef.current = true;
       
       const dist = targetScroll - window.scrollY;
-      const dur = Math.max(2, dist / 100); // Cinematic 100px per sec
+      const dur = Math.max(2, dist / 350); // Cinematic 350px per sec
       
       console.log(`[AutoScroll] Starting proxy scroll. Target: ${targetScroll}, Duration: ${dur}s`);
 

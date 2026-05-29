@@ -38,7 +38,7 @@ export default function EmotionalSection() {
           
           activeTweenRef.current = gsap.to(scrollProxy, {
             y: endPos,
-            duration: 12,
+            duration: 6,
             ease: "none",
             onUpdate: () => {
               window.scrollTo(0, scrollProxy.y);
